@@ -22,7 +22,6 @@ import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
-import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.impl.DefaultServiceLocator;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
@@ -39,12 +38,15 @@ import java.util.Arrays;
 
 /**
  * get transitive dependency information of the exact dependency
+ * reference: https://stackoverflow.com/questions/39638138/find-all-direct-dependencies-of-an-artifact-on-maven-central
  *
  * @author zhang maijun
  * @since 2020/08/22
  */
 public class DependencyUtil {
     /**
+     * get transitive dependency information of the exact dependency
+     *
      * @param remoteRepositoryMessageBean remote maven repository message
      * @param projectId                   groupId:artifactId:version project id
      * @param localRepo                   local maven repository
@@ -64,10 +66,6 @@ public class DependencyUtil {
         ArtifactDescriptorRequest request = new ArtifactDescriptorRequest(artifact, Arrays.asList(central), null);
         ArtifactDescriptorResult result = system.readArtifactDescriptor(session, request);
 
-        for (Dependency dependency : result.getDependencies()) {
-            System.out.println(dependency);
-        }
-
         return result;
     }
 
@@ -82,11 +80,6 @@ public class DependencyUtil {
         DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
         LocalRepository localRepository = new LocalRepository(localRepo);
         session.setLocalRepositoryManager(system.newLocalRepositoryManager(session, localRepository));
-        // set possible proxies and mirrors
-//        session.setProxySelector(new DefaultProxySelector().add(new Proxy(Proxy.TYPE_HTTP, "host", 3625), Arrays
-//        .asList("localhost", "127.0.0.1")));
-//        session.setMirrorSelector(new DefaultMirrorSelector().add("my-mirror", "http://mirror", "default", false,
-//        "external:*", null));
         return session;
     }
 }
