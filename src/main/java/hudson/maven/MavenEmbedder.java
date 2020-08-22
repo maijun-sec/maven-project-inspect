@@ -117,9 +117,11 @@ public class MavenEmbedder {
         try {
             this.mavenExecutionRequest = this.buildMavenExecutionRequest(mavenRequest);
 
-            RepositorySystemSession rss = ((DefaultMaven) lookup(Maven.class)).newRepositorySession(mavenExecutionRequest);
+            RepositorySystemSession rss =
+                    ((DefaultMaven) lookup(Maven.class)).newRepositorySession(mavenExecutionRequest);
 
-            mavenSession = new MavenSession(plexusContainer, rss, mavenExecutionRequest, new DefaultMavenExecutionResult());
+            mavenSession = new MavenSession(plexusContainer, rss, mavenExecutionRequest,
+                    new DefaultMavenExecutionResult());
 
             lookup(LegacySupport.class).setSession(mavenSession);
         } catch (MavenEmbedderException e) {
@@ -356,7 +358,8 @@ public class MavenEmbedder {
 
             projectBuildingRequest.setResolveDependencies(this.mavenRequest.isResolveDependencies());
 
-            List<ProjectBuildingResult> results = projectBuilder.build(Arrays.asList(mavenProject), recursive, projectBuildingRequest);
+            List<ProjectBuildingResult> results = projectBuilder.build(Arrays.asList(mavenProject), recursive,
+                    projectBuildingRequest);
 
             return results;
         } catch (ComponentLookupException e) {
@@ -411,7 +414,8 @@ public class MavenEmbedder {
     // Execution of phases/goals
     // ----------------------------------------------------------------------
 
-    public Artifact createArtifactWithClassifier(String groupId, String artifactId, String version, String type, String classifier)
+    public Artifact createArtifactWithClassifier(String groupId, String artifactId, String version, String type,
+                                                 String classifier)
             throws MavenEmbedderException {
         try {
             RepositorySystem repositorySystem = lookup(RepositorySystem.class);
@@ -475,15 +479,18 @@ public class MavenEmbedder {
 
         String checksumPolicyFlag = ArtifactRepositoryPolicy.CHECKSUM_POLICY_WARN;
 
-        ArtifactRepositoryPolicy snapshotsPolicy = new ArtifactRepositoryPolicy(true, updatePolicyFlag, checksumPolicyFlag);
+        ArtifactRepositoryPolicy snapshotsPolicy = new ArtifactRepositoryPolicy(true, updatePolicyFlag,
+                checksumPolicyFlag);
 
-        ArtifactRepositoryPolicy releasesPolicy = new ArtifactRepositoryPolicy(true, updatePolicyFlag, checksumPolicyFlag);
+        ArtifactRepositoryPolicy releasesPolicy = new ArtifactRepositoryPolicy(true, updatePolicyFlag,
+                checksumPolicyFlag);
 
         RepositorySystem repositorySystem = lookup(RepositorySystem.class);
 
         ArtifactRepositoryLayout repositoryLayout = lookup(ArtifactRepositoryLayout.class, "default");
 
-        return repositorySystem.createArtifactRepository(repositoryId, url, repositoryLayout, snapshotsPolicy, releasesPolicy);
+        return repositorySystem.createArtifactRepository(repositoryId, url, repositoryLayout, snapshotsPolicy,
+                releasesPolicy);
 
     }
 

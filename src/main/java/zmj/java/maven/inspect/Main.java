@@ -15,46 +15,67 @@
  */
 package zmj.java.maven.inspect;
 
+import hudson.maven.MavenEmbedder;
 import hudson.maven.MavenEmbedderException;
-import org.apache.maven.model.Build;
+import hudson.maven.MavenRequest;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectBuildingException;
+import org.apache.maven.project.ProjectBuildingResult;
+import org.eclipse.aether.resolution.ArtifactDescriptorException;
+import org.eclipse.aether.resolution.ArtifactDescriptorResult;
+import zmj.java.maven.inspect.bean.RemoteRepositoryMessageBean;
+import zmj.java.maven.inspect.util.DependencyUtil;
 import zmj.java.maven.inspect.util.MavenProjectUtil;
 
 import java.io.File;
 import java.util.List;
-import java.util.stream.Collectors;
 
+/**
+ * entrance of this program
+ *
+ * @author zhang maijun
+ * @since 2020/08/22
+ */
 public class Main {
-    public static void main(String[] args) throws ProjectBuildingException, MavenEmbedderException {
+    public static void main(String[] args) throws MavenEmbedderException, ProjectBuildingException,
+            ArtifactDescriptorException {
         String pomFile = "D:\\workspace\\idea\\test\\test-abc\\pom.xml";
         String localRepo = "D:\\workspace\\maven_repo";
-        String m2Home = "C:\\development\\apache-maven-3.6.1";
-        File mavenHome = new File(m2Home);
+        File mavenHome = new File("C:\\development\\apache-maven-3.6.1");
 
-        MavenProject project = MavenProjectUtil.getMavenProject(pomFile, localRepo, null);
-        List<MavenProject> projects = MavenProjectUtil.getAllSubProjects(project, localRepo);
-        System.out.println(projects.size());
+        MavenRequest mavenRequest = new MavenRequest();
+        mavenRequest.setPom(pomFile);
+        mavenRequest.setLocalRepositoryPath(localRepo);
 
-        for (MavenProject project1 : projects) {
-            System.out.println("===========> begin");
-            System.out.println(project1.getGroupId() + " <==> " + project1.getArtifactId() + " <==> " + project1.getVersion());
-            System.out.println("is a pom maven project: " + MavenProjectUtil.isParent(project1));
+        MavenEmbedder mavenEmbedder = new MavenEmbedder(mavenHome, mavenRequest);
+        List<ProjectBuildingResult> projectBuildingResults = mavenEmbedder.buildProjects(new File(pomFile), true);
 
-            if (!MavenProjectUtil.isParent(project1)) {
-                System.out.println("====> source " + MavenProjectUtil.getSourcePaths(project1).stream().collect(Collectors.joining(",")));
+        System.out.println(projectBuildingResults.size());
+        for (ProjectBuildingResult result : projectBuildingResults) {
+            System.out.println("==========================> begin");
+            MavenProject project = result.getProject();
+            System.out.println(project.getGroupId());
+            System.out.println(project.getArtifactId());
+            System.out.println(project.getVersion());
+            System.out.println(MavenProjectUtil.isParent(project));
+            System.out.println(result.getProjectId());
 
-                Build build = project1.getBuild();
-
-                List<Dependency> dependencies = project1.getDependencies();
+            if (!MavenProjectUtil.isParent(project)) {
+                List<Dependency> dependencies = project.getDependencies();
                 for (Dependency dependency : dependencies) {
-                    System.out.println("====> dependency");
-                    System.out.println(dependency.getGroupId() + " <==> " + dependency.getArtifactId() + " <==> " + dependency.getVersion());
+                    String projectId =
+                            dependency.getGroupId() + ":" + dependency.getArtifactId() + ":" + dependency.getVersion();
+                    System.out.println("====> dependency: " + projectId);
+                    RemoteRepositoryMessageBean remoteRepositoryMessageBean = new RemoteRepositoryMessageBean(
+                            "alimaven", "default", "http://maven.aliyun.com/nexus/content/groups/public/");
+                    ArtifactDescriptorResult artifactDescriptorResult =
+                            DependencyUtil.getDependencies(remoteRepositoryMessageBean, projectId, localRepo);
+                    for (org.eclipse.aether.graph.Dependency dependency1 : artifactDescriptorResult.getDependencies()) {
+                        System.out.println(dependency1);
+                    }
                 }
             }
         }
-
-        // PlexusContainer container = MavenEmbedderUtils.buildPlexusContainer(mavenHome, mavenRequest);
     }
 }

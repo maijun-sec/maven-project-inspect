@@ -184,7 +184,8 @@ public class ReactorReader
         String key = mavenProject.getGroupId() + ':' + mavenProject.getArtifactId();
         this.projectsByGA.put(key, Arrays.asList(mavenProject));
 
-        String projectKey = mavenProject.getGroupId() + ':' + mavenProject.getArtifactId() + ':' + mavenProject.getVersion();
+        String projectKey =
+                mavenProject.getGroupId() + ':' + mavenProject.getArtifactId() + ':' + mavenProject.getVersion();
 
         this.projectsByGAV.put(projectKey, mavenProject);
     }

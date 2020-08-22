@@ -73,14 +73,16 @@ public class MavenEmbedderUtils {
             throw new IllegalArgumentException("mavenHome cannot be null");
         }
         if (!mavenHome.exists()) {
-            throw new IllegalArgumentException("mavenHome '" + mavenHome.getPath() + "' doesn't seem to exist on this node (or you don't have sufficient rights to access it)");
+            throw new IllegalArgumentException("mavenHome '" + mavenHome.getPath() + "' doesn't seem to exist on this" +
+                    " node (or you don't have sufficient rights to access it)");
         }
 
         // list all jar under mavenHome/lib
 
         File libDirectory = new File(mavenHome, "lib");
         if (!libDirectory.exists()) {
-            throw new IllegalArgumentException(mavenHome.getPath() + " doesn't have a 'lib' subdirectory - thus cannot be a valid maven installation!");
+            throw new IllegalArgumentException(mavenHome.getPath() + " doesn't have a 'lib' subdirectory - thus " +
+                    "cannot be a valid maven installation!");
         }
 
         File[] jarFiles = libDirectory.listFiles((dir, name) -> name.endsWith(".jar"));
@@ -97,7 +99,8 @@ public class MavenEmbedderUtils {
             world = new ClassWorld();
         }
 
-        ClassRealm classRealm = new ClassRealm(world, "plexus.core", parentClassLoader == null ? antClassLoader : parentClassLoader);
+        ClassRealm classRealm = new ClassRealm(world, "plexus.core", parentClassLoader == null ? antClassLoader :
+                parentClassLoader);
 
         if (jarFiles != null) {
             for (File jarFile : jarFiles) {
@@ -114,7 +117,8 @@ public class MavenEmbedderUtils {
     public static PlexusContainer buildPlexusContainer(File mavenHome, MavenRequest mavenRequest) throws MavenEmbedderException {
         ClassWorld world = new ClassWorld("plexus.core", Thread.currentThread().getContextClassLoader());
 
-        ClassRealm classRealm = MavenEmbedderUtils.buildClassRealm(mavenHome, world, Thread.currentThread().getContextClassLoader());
+        ClassRealm classRealm = MavenEmbedderUtils.buildClassRealm(mavenHome, world,
+                Thread.currentThread().getContextClassLoader());
 
         DefaultContainerConfiguration conf = new DefaultContainerConfiguration();
 
@@ -136,7 +140,8 @@ public class MavenEmbedderUtils {
      * @return
      * @throws MavenEmbedderException
      */
-    public static PlexusContainer buildPlexusContainer(ClassLoader mavenClassLoader, ClassLoader parent, MavenRequest mavenRequest) throws MavenEmbedderException {
+    public static PlexusContainer buildPlexusContainer(ClassLoader mavenClassLoader, ClassLoader parent,
+                                                       MavenRequest mavenRequest) throws MavenEmbedderException {
         DefaultContainerConfiguration conf = new DefaultContainerConfiguration();
 
         conf.setAutoWiring(mavenRequest.isContainerAutoWiring())
@@ -157,7 +162,8 @@ public class MavenEmbedderUtils {
         return buildPlexusContainer(mavenRequest, conf);
     }
 
-    private static PlexusContainer buildPlexusContainer(MavenRequest mavenRequest, ContainerConfiguration containerConfiguration)
+    private static PlexusContainer buildPlexusContainer(MavenRequest mavenRequest,
+                                                        ContainerConfiguration containerConfiguration)
             throws MavenEmbedderException {
         try {
             DefaultPlexusContainer plexusContainer = new DefaultPlexusContainer(containerConfiguration);
@@ -197,7 +203,8 @@ public class MavenEmbedderUtils {
             original = Thread.currentThread().getContextClassLoader();
 
             Thread.currentThread().setContextClassLoader(realm);
-            // TODO is this really intending to use findResource rather than getResource? Cf. https://github.com/sonatype/plexus-classworlds/pull/8
+            // TODO is this really intending to use findResource rather than getResource? Cf. https://github
+            //  .com/sonatype/plexus-classworlds/pull/8
             URL resource = realm.findResource(POM_PROPERTIES_PATH);
             if (resource == null) {
                 throw new MavenEmbedderException("Couldn't find maven version information in '" + mavenHome.getPath()

@@ -127,7 +127,8 @@ public class MavenProjectUtil {
      * @throws MavenEmbedderException
      * @throws ProjectBuildingException
      */
-    public static MavenProject getMavenProject(String pomFile, String localRepo, MavenProject parent) throws MavenEmbedderException, ProjectBuildingException {
+    public static MavenProject getMavenProject(String pomFile, String localRepo, MavenProject parent)
+            throws MavenEmbedderException, ProjectBuildingException {
         MavenRequest mavenRequest = new MavenRequest();
         mavenRequest.setPom(pomFile);
         mavenRequest.setLocalRepositoryPath(localRepo);
@@ -174,7 +175,8 @@ public class MavenProjectUtil {
     }
 
     @Deprecated
-    private static void addAbsoluteSourcePaths(List<String> sourcePaths, File basePath, List<String> additonalSourcePaths) {
+    private static void addAbsoluteSourcePaths(List<String> sourcePaths, File basePath,
+                                               List<String> additonalSourcePaths) {
         if (CollectionUtils.isNotEmpty(additonalSourcePaths)) {
             for (String additionalSourcePath : additonalSourcePaths) {
                 File file = new File(basePath, additionalSourcePath);
