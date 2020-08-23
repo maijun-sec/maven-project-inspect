@@ -15,9 +15,6 @@
  */
 package zmj.java.maven.inspect;
 
-import hudson.maven.MavenEmbedder;
-import hudson.maven.MavenEmbedderException;
-import hudson.maven.MavenRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -26,19 +23,12 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.apache.maven.model.Dependency;
-import org.apache.maven.project.MavenProject;
-import org.apache.maven.project.ProjectBuildingException;
-import org.apache.maven.project.ProjectBuildingResult;
-import org.eclipse.aether.resolution.ArtifactDescriptorException;
-import org.eclipse.aether.resolution.ArtifactDescriptorResult;
-import zmj.java.maven.inspect.bean.RemoteRepositoryMessageBean;
-import zmj.java.maven.inspect.util.DependencyUtil;
-import zmj.java.maven.inspect.util.MavenProjectUtil;
+import zmj.java.maven.inspect.constant.Constants;
+import zmj.java.maven.inspect.exception.MavenProjectInspectException;
+import zmj.java.maven.inspect.handler.JavaProjectOptionHandler;
 
 import java.io.File;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -49,65 +39,29 @@ import java.util.Map;
  */
 @Slf4j
 public class Main {
-    public static void main(String[] args) throws MavenEmbedderException, ProjectBuildingException,
-            ArtifactDescriptorException {
+    public static void main(String[] args) {
+        args = new String[] {"--maven-script", "D:\\workspace\\idea\\test\\test-abc\\pom.xml",
+                "--maven-home", "C:\\development\\apache-maven-3.6.1"};
         Options options = getSupportedOptions();
         try {
             CommandLine commandLine = parseArg(args, options);
 
             // only need to print help message
-            if (commandLine.hasOption("help") || commandLine.hasOption("h")) {
+            if (commandLine.hasOption(Constants.OPTION_HELP)) {
                 printHelp(options);
                 return;
             }
 
             Map<String, String> arguments = parseCommandLine(commandLine);
+
+            JavaProjectOptionHandler.handle(arguments);
         } catch (ParseException e) {
             log.error("parse command error, error message: {}", e.getMessage());
             log.error("please check the arguments you set.");
             printHelp(options);
         } catch (MavenProjectInspectException e) {
-            e.printStackTrace();
-        }
-
-
-        String pomFile = "D:\\workspace\\idea\\test\\test-abc\\pom.xml";
-        String localRepo = "D:\\workspace\\maven_repo";
-        File mavenHome = new File("C:\\development\\apache-maven-3.6.1");
-        System.out.println(System.getenv("M2_HOME"));
-
-        MavenRequest mavenRequest = new MavenRequest();
-        mavenRequest.setPom(pomFile);
-        mavenRequest.setLocalRepositoryPath(localRepo);
-
-        MavenEmbedder mavenEmbedder = new MavenEmbedder(mavenHome, mavenRequest);
-        List<ProjectBuildingResult> projectBuildingResults = mavenEmbedder.buildProjects(new File(pomFile), true);
-
-        System.out.println(projectBuildingResults.size());
-        for (ProjectBuildingResult result : projectBuildingResults) {
-            System.out.println("==========================> begin");
-            MavenProject project = result.getProject();
-            System.out.println(project.getGroupId());
-            System.out.println(project.getArtifactId());
-            System.out.println(project.getVersion());
-            System.out.println(MavenProjectUtil.isParent(project));
-            System.out.println(result.getProjectId());
-
-            if (!MavenProjectUtil.isParent(project)) {
-                List<Dependency> dependencies = project.getDependencies();
-                for (Dependency dependency : dependencies) {
-                    String projectId =
-                            dependency.getGroupId() + ":" + dependency.getArtifactId() + ":" + dependency.getVersion();
-                    System.out.println("====> dependency: " + projectId);
-                    RemoteRepositoryMessageBean remoteRepositoryMessageBean = new RemoteRepositoryMessageBean(
-                            "alimaven", "default", "http://maven.aliyun.com/nexus/content/groups/public/");
-                    ArtifactDescriptorResult artifactDescriptorResult =
-                            DependencyUtil.getDependencies(remoteRepositoryMessageBean, projectId, localRepo);
-                    for (org.eclipse.aether.graph.Dependency dependency1 : artifactDescriptorResult.getDependencies()) {
-                        System.out.println(dependency1);
-                    }
-                }
-            }
+            log.error("internal error: {}", e.getMessage());
+            printHelp(options);
         }
     }
 
@@ -115,25 +69,31 @@ public class Main {
         Map<String, String> arguments = new HashMap<>();
 
         // maven pom.xml
-        arguments.put("maven-script", getMavenPomFile(commandLine));
+        arguments.put(Constants.OPTION_MAVEN_SCRIPT, getMavenPomFile(commandLine));
 
         // maven home
         String mavenHome = getMavenHome(commandLine);
-        arguments.put("maven-home", mavenHome);
+        arguments.put(Constants.OPTION_MAVEV_HOME, mavenHome);
 
-        // maven user setting file
+        // maven user settings file
+        // we will get maven local repository, remote repository from user settings file
         String userSettingFile = getUserSettingsFile(commandLine, mavenHome);
-        arguments.put("user-setting-file", userSettingFile);
+        arguments.put(Constants.OPTION_USER_SETTINGS, userSettingFile);
 
         return arguments;
     }
 
     private static String getUserSettingsFile(CommandLine commandLine, String mavenHome) throws MavenProjectInspectException {
         String userSettingFile = commandLine.getOptionValue("user-setting-file");
-        File userSetFile = new File(userSettingFile);
-        if (userSettingFile == null || !userSetFile.exists() || userSetFile.isDirectory()) {
+        if (userSettingFile != null) {
+            File userSetFile = new File(userSettingFile);
+            if (!userSetFile.exists() || userSetFile.isDirectory()) {
+                userSettingFile = mavenHome + File.separator + "conf" + File.separator + "settings.xml";
+            }
+        } else {
             userSettingFile = mavenHome + File.separator + "conf" + File.separator + "settings.xml";
         }
+
 
         File userSetFile1 = new File(userSettingFile);
         if (!userSetFile1.exists()) {
@@ -144,10 +104,15 @@ public class Main {
     }
 
     private static String getMavenHome(CommandLine commandLine) throws MavenProjectInspectException {
-        String mavenHome = commandLine.getOptionValue("maven-home");
-        File mavenHomeFile = new File(mavenHome);
-        if (mavenHome == null || !mavenHomeFile.exists() || mavenHomeFile.isFile()) {
-            mavenHome = System.getenv("M2_HOME");
+        String mavenHome = commandLine.getOptionValue(Constants.OPTION_MAVEV_HOME);
+
+        if (mavenHome != null) {
+            File mavenHomeFile = new File(mavenHome);
+            if (!mavenHomeFile.exists() || mavenHomeFile.isFile()) {
+                mavenHome = System.getenv(Constants.SYSTEM_PARAM_MAVEN_HOME);
+            }
+        } else {
+            mavenHome = System.getenv(Constants.SYSTEM_PARAM_MAVEN_HOME);
         }
 
         if (mavenHome == null) {
@@ -158,13 +123,13 @@ public class Main {
     }
 
     private static String getMavenPomFile(CommandLine commandLine) throws MavenProjectInspectException {
-        if (!commandLine.hasOption("maven-script")) {
+        if (!commandLine.hasOption(Constants.OPTION_MAVEN_SCRIPT)) {
             throw new MavenProjectInspectException("no maven project build file pom.xml set, it's necessory");
         }
 
-        String mavenScript = commandLine.getOptionValue("maven-script");
+        String mavenScript = commandLine.getOptionValue(Constants.OPTION_MAVEN_SCRIPT);
         File mavenScriptFile = new File(mavenScript);
-        if (mavenScript == null || !mavenScriptFile.exists() || mavenScriptFile.isDirectory() || !mavenScript.endsWith(".pom")) {
+        if (mavenScript == null || !mavenScriptFile.exists() || mavenScriptFile.isDirectory() || !mavenScript.endsWith(".xml")) {
             throw new MavenProjectInspectException("maven pom.xml is not exist or set wrong!");
         }
 
@@ -172,8 +137,8 @@ public class Main {
     }
 
     private static CommandLine parseArg(String[] args, Options options) throws ParseException {
-        CommandLineParser paraer = new DefaultParser();
-        CommandLine cmdLine = paraer.parse(options, args);
+        CommandLineParser parser = new DefaultParser();
+        CommandLine cmdLine = parser.parse(options, args);
         return cmdLine;
     }
 
@@ -185,7 +150,7 @@ public class Main {
     private static void printHelp(Options options) {
         HelpFormatter hf = new HelpFormatter();
         hf.setWidth(200);
-        hf.printHelp("maven-project-inspect", options, true);
+        hf.printHelp(Constants.PROJECT_NAME, options, true);
     }
 
     /**
@@ -197,30 +162,25 @@ public class Main {
         Options options = new Options();
 
         // print help message
-        Option opt = new Option("h", "help", false, "Print help");
+        Option opt = new Option(Constants.OPTION_HELP_SHORT, Constants.OPTION_HELP, false, "Print help");
         opt.setRequired(false);
         options.addOption(opt);
 
         // if not set, we will find the System parameter M2_HOME
         // if we all can't find, will report error
-        opt = new Option("mh", "maven-home", true, "Maven installation.");
+        opt = new Option(Constants.OPTION_MAVEV_HOME_SHORT, Constants.OPTION_MAVEV_HOME, true, "Maven installation.");
         opt.setRequired(false);
         options.addOption(opt);
 
         // if not set, we will use ${M2_HOME}/config/settings.xml
-        opt = new Option("usf", "user-setting-file", true, "user settings file for maven");
-        opt.setRequired(false);
-        options.addOption(opt);
-
-        // if not set, we will get this message with the following order:
-        // 1. user setting file specified;
-        // 2. configuration in ${M2_HOME}/config/settings.xml
-        opt = new Option("mlr", "maven-local-repo", true, "Maven local repository");
+        opt = new Option(Constants.OPTION_USER_SETTINGS_SHORT, Constants.OPTION_USER_SETTINGS, true, "user settings " +
+                "file for maven");
         opt.setRequired(false);
         options.addOption(opt);
 
         // necessary, must set
-        opt = new Option("ms", "maven-script", true, "maven project build file: pom.xml");
+        opt = new Option(Constants.OPTION_MAVEN_SCRIPT_SHORT, Constants.OPTION_MAVEN_SCRIPT, true, "maven " +
+                "project build file: pom.xml");
         opt.setRequired(true);
         options.addOption(opt);
 

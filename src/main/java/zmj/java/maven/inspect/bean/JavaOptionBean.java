@@ -19,6 +19,7 @@ import lombok.Data;
 import lombok.ToString;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * java file compile options
@@ -29,6 +30,11 @@ import java.util.List;
 @Data
 @ToString
 public class JavaOptionBean {
+    /**
+     * the identifier of this maven module
+     */
+    private String projectId;
+
     /**
      * jdk version of this project
      */
@@ -44,12 +50,12 @@ public class JavaOptionBean {
      * mainly we will get sourceDirectory under build tag
      * if there is org.codehaus.mojo/build-helper-maven-plugin plugin, there will be multiple source paths.
      */
-    private List<String> sourcePaths;
+    private Set<String> sourcePaths;
 
     /**
      * test source path
      */
-    private String testSourcePaths;
+    private String testSourcePath;
 
     /**
      * directory that the source file will be compiled to
@@ -64,5 +70,5 @@ public class JavaOptionBean {
     /**
      * dependencies of this project
      */
-    private List<DependencyBean> dependencyBeans;
+    private Set<DependencyBean> dependencyBeans;
 }

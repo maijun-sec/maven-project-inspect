@@ -54,7 +54,7 @@ public class DependencyUtil {
      * @throws ArtifactDescriptorException
      */
     public static ArtifactDescriptorResult getDependencies(RemoteRepositoryMessageBean remoteRepositoryMessageBean,
-            String projectId, String localRepo) throws ArtifactDescriptorException {
+                                                           String projectId, String localRepo) throws ArtifactDescriptorException {
         DefaultServiceLocator locator = MavenRepositorySystemUtils.newServiceLocator();
         RepositorySystem system = newRepositorySystem(locator);
         RepositorySystemSession session = newSession(system, localRepo);

@@ -18,6 +18,8 @@ package zmj.java.maven.inspect.bean;
 import lombok.Data;
 import lombok.ToString;
 
+import java.util.Objects;
+
 /**
  * maven dependency message
  *
@@ -43,7 +45,27 @@ public class DependencyBean {
     private String version;
 
     /**
+     * scope of the dependency
+     */
+    private String scope;
+
+    /**
      * file path of the dependency in the local maven repository
      */
     private String filePath;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DependencyBean that = (DependencyBean) o;
+        return groupId.equals(that.groupId) &&
+                artifactId.equals(that.artifactId) &&
+                version.equals(that.version);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(groupId, artifactId, version);
+    }
 }

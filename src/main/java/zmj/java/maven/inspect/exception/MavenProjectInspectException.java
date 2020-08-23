@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package zmj.java.maven.inspect;
+package zmj.java.maven.inspect.exception;
 
 /**
  * custom exception for this project

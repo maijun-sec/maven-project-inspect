@@ -30,7 +30,9 @@ import org.codehaus.plexus.util.xml.Xpp3Dom;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -150,8 +152,8 @@ public class MavenProjectUtil {
      * @param project maven module
      * @return all source paths
      */
-    public static List<String> getSourcePaths(MavenProject project) {
-        List<String> sourcePaths = new ArrayList<>();
+    public static Set<String> getSourcePaths(MavenProject project) {
+        Set<String> sourcePaths = new HashSet<>();
 
         Build build = project.getBuild();
 
