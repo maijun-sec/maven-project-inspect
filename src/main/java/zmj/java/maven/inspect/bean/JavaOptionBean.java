@@ -18,7 +18,6 @@ package zmj.java.maven.inspect.bean;
 import lombok.Data;
 import lombok.ToString;
 
-import java.util.List;
 import java.util.Set;
 
 /**

@@ -28,8 +28,9 @@ import org.apache.maven.project.ProjectBuildingResult;
 import org.apache.maven.settings.Mirror;
 import org.apache.maven.settings.Settings;
 import org.eclipse.aether.artifact.Artifact;
-import org.eclipse.aether.resolution.ArtifactDescriptorException;
-import org.eclipse.aether.resolution.ArtifactDescriptorResult;
+import org.eclipse.aether.resolution.ArtifactResult;
+import org.eclipse.aether.resolution.DependencyResolutionException;
+import org.eclipse.aether.resolution.DependencyResult;
 import zmj.java.maven.inspect.bean.DependencyBean;
 import zmj.java.maven.inspect.bean.JavaOptionBean;
 import zmj.java.maven.inspect.bean.RemoteRepositoryMessageBean;
@@ -135,19 +136,21 @@ public class JavaProjectOptionHandler {
 
         List<Dependency> dependencies = project.getDependencies();
         for (Dependency dependency : dependencies) {
+            String scope = dependency.getScope();
             String dependencyId =
                     dependency.getGroupId() + ":" + dependency.getArtifactId() + ":" + dependency.getVersion();
             RemoteRepositoryMessageBean remoteRepositoryMessageBean = new RemoteRepositoryMessageBean(mirror.getId(),
                     mirror.getMirrorOf(), mirror.getUrl());
             try {
-                ArtifactDescriptorResult artifactDescriptorResult =
+                DependencyResult dependencyResult =
                         DependencyUtil.getDependencies(remoteRepositoryMessageBean,
-                        dependencyId, localRepo);
-                for (org.eclipse.aether.graph.Dependency depend : artifactDescriptorResult.getDependencies()) {
-                    DependencyBean bean = getDependencyBean(depend);
+                                dependencyId, localRepo, scope);
+                final List<ArtifactResult> artifactResults = dependencyResult.getArtifactResults();
+                for (final ArtifactResult artifactResult : artifactResults) {
+                    DependencyBean bean = getDependencyBean(artifactResult, scope);
                     dependencyBeans.add(bean);
                 }
-            } catch (ArtifactDescriptorException e) {
+            } catch (DependencyResolutionException e) {
                 log.warn("exception occur when handle dependency of {}, need further check!", projectId);
             }
         }
@@ -156,23 +159,23 @@ public class JavaProjectOptionHandler {
         return optionBean;
     }
 
-    private static DependencyBean getDependencyBean(org.eclipse.aether.graph.Dependency depend) {
+    private static DependencyBean getDependencyBean(ArtifactResult artifactResult, String scope) {
         DependencyBean bean = new DependencyBean();
-        Artifact artifact = depend.getArtifact();
+        Artifact artifact = artifactResult.getArtifact();
         String groupId = artifact.getGroupId();
         String artifactId = artifact.getArtifactId();
         String version = artifact.getVersion();
         bean.setGroupId(groupId);
         bean.setArtifactId(artifactId);
         bean.setVersion(version);
-        bean.setScope(depend.getScope());
+        bean.setScope(scope);
         try {
-            // TODO get artifact file
             if (artifact.getFile() != null) {
                 bean.setFilePath(artifact.getFile().getCanonicalPath());
             }
         } catch (IOException e) {
-            log.warn("can't get local file path for dependency {}:{}:{}, error message: {}", groupId, artifactId, version, e.getMessage());
+            log.warn("can't get local file path for dependency {}:{}:{}, error message: {}", groupId, artifactId,
+                    version, e.getMessage());
         }
 
         return bean;

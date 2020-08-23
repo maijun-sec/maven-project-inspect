@@ -40,7 +40,7 @@ import java.util.Map;
 @Slf4j
 public class Main {
     public static void main(String[] args) {
-        args = new String[] {"--maven-script", "D:\\workspace\\idea\\test\\test-abc\\pom.xml",
+        args = new String[]{"--maven-script", "D:\\workspace\\idea\\test\\test-abc\\pom.xml",
                 "--maven-home", "C:\\development\\apache-maven-3.6.1"};
         Options options = getSupportedOptions();
         try {

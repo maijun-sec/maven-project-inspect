@@ -21,20 +21,23 @@ import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
+import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.impl.DefaultServiceLocator;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactDescriptorException;
-import org.eclipse.aether.resolution.ArtifactDescriptorRequest;
-import org.eclipse.aether.resolution.ArtifactDescriptorResult;
+import org.eclipse.aether.resolution.DependencyRequest;
+import org.eclipse.aether.resolution.DependencyResolutionException;
+import org.eclipse.aether.resolution.DependencyResult;
 import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
 import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transport.file.FileTransporterFactory;
 import org.eclipse.aether.transport.http.HttpTransporterFactory;
 import zmj.java.maven.inspect.bean.RemoteRepositoryMessageBean;
 
-import java.util.Arrays;
+import java.util.Collections;
 
 /**
  * get transitive dependency information of the exact dependency
@@ -53,8 +56,8 @@ public class DependencyUtil {
      * @return transitive dependency
      * @throws ArtifactDescriptorException
      */
-    public static ArtifactDescriptorResult getDependencies(RemoteRepositoryMessageBean remoteRepositoryMessageBean,
-                                                           String projectId, String localRepo) throws ArtifactDescriptorException {
+    public static DependencyResult getDependencies(RemoteRepositoryMessageBean remoteRepositoryMessageBean,
+                                                   String projectId, String localRepo, String scope) throws DependencyResolutionException {
         DefaultServiceLocator locator = MavenRepositorySystemUtils.newServiceLocator();
         RepositorySystem system = newRepositorySystem(locator);
         RepositorySystemSession session = newSession(system, localRepo);
@@ -63,8 +66,15 @@ public class DependencyUtil {
                 remoteRepositoryMessageBean.getType(), remoteRepositoryMessageBean.getUrl()).build();
 
         Artifact artifact = new DefaultArtifact(projectId);
-        ArtifactDescriptorRequest request = new ArtifactDescriptorRequest(artifact, Arrays.asList(central), null);
-        ArtifactDescriptorResult result = system.readArtifactDescriptor(session, request);
+        // ArtifactDescriptorRequest request = new ArtifactDescriptorRequest(artifact, Arrays.asList(central), null);
+        // ArtifactDescriptorResult result = system.readArtifactDescriptor(session, request);
+
+        // resolved artifact, used to get the path of artifact in the local repository
+        final CollectRequest collectRequest = new CollectRequest();
+        collectRequest.setRoot(new Dependency(artifact, scope));
+        collectRequest.setRepositories(Collections.singletonList(central));
+        final DependencyRequest dependencyRequest = new DependencyRequest(collectRequest, null);
+        DependencyResult result = system.resolveDependencies(session, dependencyRequest);
 
         return result;
     }
