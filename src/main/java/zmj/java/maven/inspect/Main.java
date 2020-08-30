@@ -40,8 +40,8 @@ import java.util.Map;
 @Slf4j
 public class Main {
     public static void main(String[] args) {
-        args = new String[]{"--maven-script", "D:\\workspace\\idea\\test\\test-abc\\pom.xml",
-                "--maven-home", "C:\\development\\apache-maven-3.6.1"};
+        // args = new String[]{"--maven-script", "D:\\workspace\\idea\\test\\test-abc\\pom.xml",
+        //     "--maven-home", "C:\\development\\apache-maven-3.6.1"};
         Options options = getSupportedOptions();
         try {
             CommandLine commandLine = parseArg(args, options);
@@ -54,7 +54,8 @@ public class Main {
 
             Map<String, String> arguments = parseCommandLine(commandLine);
 
-            JavaProjectOptionHandler.handle(arguments);
+            JavaProjectOptionHandler.handle(arguments.get(Constants.OPTION_MAVEN_SCRIPT),
+                    arguments.get(Constants.OPTION_MAVEV_HOME), arguments.get(Constants.OPTION_USER_SETTINGS));
         } catch (ParseException e) {
             log.error("parse command error, error message: {}", e.getMessage());
             log.error("please check the arguments you set.");

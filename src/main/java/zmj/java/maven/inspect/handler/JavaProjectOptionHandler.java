@@ -34,7 +34,7 @@ import org.eclipse.aether.resolution.DependencyResult;
 import zmj.java.maven.inspect.bean.DependencyBean;
 import zmj.java.maven.inspect.bean.JavaOptionBean;
 import zmj.java.maven.inspect.bean.RemoteRepositoryMessageBean;
-import zmj.java.maven.inspect.constant.Constants;
+import zmj.java.maven.inspect.cache.ModuleTargetCache;
 import zmj.java.maven.inspect.exception.MavenProjectInspectException;
 import zmj.java.maven.inspect.util.DependencyUtil;
 import zmj.java.maven.inspect.util.MavenProjectUtil;
@@ -45,7 +45,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
@@ -56,15 +55,21 @@ import java.util.Set;
  */
 @Slf4j
 public class JavaProjectOptionHandler {
-    public static void handle(Map<String, String> arguments) throws MavenProjectInspectException {
-        // maven pom file
-        String pomFile = arguments.get(Constants.OPTION_MAVEN_SCRIPT);
-
+    /**
+     * handle maven project option
+     *
+     * @param pomFile          maven pom file
+     * @param mavenHomePath    maven installation
+     * @param userSettingsFile user settings file
+     * @return maven options
+     * @throws MavenProjectInspectException
+     */
+    public static List<JavaOptionBean> handle(String pomFile, String mavenHomePath, String userSettingsFile) throws MavenProjectInspectException {
         // maven home
-        File mavenHome = new File(arguments.get(Constants.OPTION_MAVEV_HOME));
+        File mavenHome = new File(mavenHomePath);
 
         // maven settings message
-        Settings settings = SettingsUtil.build(arguments.get(Constants.OPTION_USER_SETTINGS));
+        Settings settings = SettingsUtil.build(userSettingsFile);
 
         // local repository
         String localRepo = settings.getLocalRepository();
@@ -80,7 +85,7 @@ public class JavaProjectOptionHandler {
 
         List<JavaOptionBean> javaOptionBeans = handleProjectBuildingResults(localRepo, projectBuildingResults, mirror);
 
-        javaOptionBeans.forEach(System.out::println);
+        return javaOptionBeans;
     }
 
     private static List<JavaOptionBean> handleProjectBuildingResults(String localRepo,
@@ -121,6 +126,7 @@ public class JavaProjectOptionHandler {
 
         // set source output directory
         optionBean.setOutputPath(build.getOutputDirectory());
+        ModuleTargetCache.insert(projectId, build.getOutputDirectory());
 
         // set test output directory
         optionBean.setTestOutputPath(build.getTestOutputDirectory());
@@ -142,13 +148,20 @@ public class JavaProjectOptionHandler {
             RemoteRepositoryMessageBean remoteRepositoryMessageBean = new RemoteRepositoryMessageBean(mirror.getId(),
                     mirror.getMirrorOf(), mirror.getUrl());
             try {
-                DependencyResult dependencyResult =
-                        DependencyUtil.getDependencies(remoteRepositoryMessageBean,
-                                dependencyId, localRepo, scope);
-                final List<ArtifactResult> artifactResults = dependencyResult.getArtifactResults();
-                for (final ArtifactResult artifactResult : artifactResults) {
-                    DependencyBean bean = getDependencyBean(artifactResult, scope);
+                if (ModuleTargetCache.isModule(dependencyId)) {
+                    DependencyBean bean = new DependencyBean(dependency.getGroupId(), dependency.getArtifactId(),
+                            dependency.getVersion(), dependency.getScope(),
+                            ModuleTargetCache.getTargetByProjectId(dependencyId));
                     dependencyBeans.add(bean);
+                } else {
+                    DependencyResult dependencyResult =
+                            DependencyUtil.getDependencies(remoteRepositoryMessageBean,
+                                    dependencyId, localRepo, scope);
+                    List<ArtifactResult> artifactResults = dependencyResult.getArtifactResults();
+                    for (ArtifactResult artifactResult : artifactResults) {
+                        DependencyBean bean = getDependencyBean(artifactResult, scope);
+                        dependencyBeans.add(bean);
+                    }
                 }
             } catch (DependencyResolutionException e) {
                 log.warn("exception occur when handle dependency of {}, need further check!", projectId);

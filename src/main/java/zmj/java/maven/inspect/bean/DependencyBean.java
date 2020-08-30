@@ -15,7 +15,9 @@
  */
 package zmj.java.maven.inspect.bean;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import lombok.ToString;
 
 import java.util.Objects;
@@ -28,6 +30,8 @@ import java.util.Objects;
  */
 @Data
 @ToString
+@AllArgsConstructor
+@NoArgsConstructor
 public class DependencyBean {
     /**
      * group id of the dependency

@@ -70,10 +70,10 @@ public class DependencyUtil {
         // ArtifactDescriptorResult result = system.readArtifactDescriptor(session, request);
 
         // resolved artifact, used to get the path of artifact in the local repository
-        final CollectRequest collectRequest = new CollectRequest();
+        CollectRequest collectRequest = new CollectRequest();
         collectRequest.setRoot(new Dependency(artifact, scope));
         collectRequest.setRepositories(Collections.singletonList(central));
-        final DependencyRequest dependencyRequest = new DependencyRequest(collectRequest, null);
+        DependencyRequest dependencyRequest = new DependencyRequest(collectRequest, null);
         DependencyResult result = system.resolveDependencies(session, dependencyRequest);
 
         return result;
